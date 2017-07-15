@@ -5,7 +5,7 @@ function setup(){
 
     var c=5;
     for(var i=0;i<c;i++)
-        new Point(Math.random()*4-2,Math.random()*4-2);
+        new Point(Math.random()*8-4,Math.random()*8-4);
     drawGrid();
     solve(c-1);
 }
@@ -13,8 +13,9 @@ function setup(){
 exp="1";
 theta=[1,1,1];
 startAlpha=1;
-r=1.01
-function solve(d=0,iterations=10000){
+r=1.01;
+e=0.8
+function solve(d=0,iterations=1000000){
     var n=d+1;
     var m=plotArea.points.length;
     var X=new Array(m);
@@ -38,12 +39,13 @@ function solve(d=0,iterations=10000){
     }
     for(var j=0;j<n;j++){
         avgF[j]/=m;
+        rangeF[j]=0;
         rangeF[j]=(maxF[j]-minF[j])||1;
     }
 
     for(i=0;i<plotArea.points.length;i++){
         for(var j=1;j<n;j++){
-            X[i][j]=(X[i][j]-avgF[j])/rangeF[j];
+            X[i][j]=(X[i][j]-minF[j])/rangeF[j];
         }
     }
     // console.log(X);
@@ -68,7 +70,7 @@ function solve(d=0,iterations=10000){
 
         if(prevJ<J){
             // f-=1;
-            alpha*=0.8;
+            alpha*=e;
             for(var i=0;i<n;i++)
                 theta[i]=prevTheta[i];
         }
@@ -85,7 +87,7 @@ function solve(d=0,iterations=10000){
                 theta[i]=grad[i];
         }
 
-
+        // console.log(alpha)
 
     }
     console.log(J,f,alpha);
@@ -96,7 +98,7 @@ function solve(d=0,iterations=10000){
     exp=theta[0]+"";
     // exp="0.2*x+1";
     for (var i=1;i<theta.length;i++)
-        exp+="+("+theta[i]+")*(Math.pow(x,"+i+")-("+avgF[i]+"))/"+rangeF[i];
+        exp+="+("+theta[i]+")*(Math.pow(x,"+i+")-("+minF[i]+"))/"+rangeF[i];
 
     scheduleDraw();
 
