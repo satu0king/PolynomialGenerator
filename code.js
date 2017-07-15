@@ -1,11 +1,145 @@
 function setup(){
     plotArea.setup();
+    document.getElementById("addPointer").addEventListener("click",function(){new Point(0,0);console.log("SDS")});
+    document.getElementById("solveButton").addEventListener("click",function(){solve( (plotArea.points.length||1)-1)});
+
+    var c=5;
+    for(var i=0;i<c;i++)
+        new Point(Math.random()*4-2,Math.random()*4-2);
+    drawGrid();
+    solve(c-1);
 }
+
+exp="1";
+theta=[1,1,1];
+startAlpha=1;
+r=1.01
+function solve(d=0,iterations=3000){
+    var n=d+1;
+    var m=plotArea.points.length;
+    var X=new Array(m);
+    var Y=new Array(m);
+    avgF=new Array(n);
+    minF=new Array(n);
+    maxF=new Array(n);
+    rangeF=new Array(n);
+    for(i=0;i<plotArea.points.length;i++){
+        X[i]=new Array(n);
+        Y[i]=plotArea.points[i].y;
+        for(var j=0;j<n;j++){
+            var f=Math.pow(plotArea.points[i].x,j);
+            X[i][j]=f;
+            avgF[j]=(avgF[j]||0)+f
+            if(minF[j]==undefined||minF[j]>f)
+                minF[j]=f;
+            if(maxF[j]==undefined||maxF[j]<f)
+                maxF[j]=f;
+        }
+    }
+    for(var j=0;j<n;j++){
+        avgF[j]/=m;
+        rangeF[j]=(maxF[j]-minF[j])||1;
+    }
+
+    for(i=0;i<plotArea.points.length;i++){
+        for(var j=1;j<n;j++){
+            X[i][j]=(X[i][j]-avgF[j])/rangeF[j];
+        }
+    }
+    // console.log(X);
+    // return;
+
+
+    // return;
+    theta=new Array(n);
+    prevTheta=new Array(n);
+    for(var i=0;i<n;i++)
+        theta[i]=0;
+    for(var i=0;i<n;i++)
+        prevTheta[i]=0;
+    console.log(X,theta,Y);
+    // return;
+    var alpha=startAlpha;
+    var prevJ=Infinity;
+
+    for(f=0; f<iterations &&prevJ>0.001;f++){
+        var [J,grad]=costFn(X,theta,Y,alpha);
+
+
+        if(prevJ<J){
+            // f-=1;
+            alpha*=0.8;
+            for(var i=0;i<n;i++)
+                theta[i]=prevTheta[i];
+        }
+        // else {
+        //     alpha*=1.01;
+        // }
+        else{
+            alpha*=r;
+            prevJ=J;
+
+            for(var i=0;i<n;i++)
+                prevTheta[i]=theta[i];
+            for(var i=0;i<n;i++)
+                theta[i]=grad[i];
+        }
+
+
+
+    }
+    console.log(J,f,alpha);
+    console.log("theta:",theta);
+
+    // return;
+
+    exp=theta[0]+"";
+    // exp="0.2*x+1";
+    for (var i=1;i<theta.length;i++)
+        exp+="+("+theta[i]+")*(Math.pow(x,"+i+")-("+avgF[i]+"))/"+rangeF[i];
+
+    scheduleDraw();
+
+
+}
+
+
+function costFn(X,theta,Y,alpha){
+    // console.log(theta)
+    var m=X.length;
+    var H=new Array(m);
+    var n=theta.length;
+    for(var i=0;i<m;i++)
+        for(var j=0;j<n;j++)
+            H[i]=(H[i]||0)+X[i][j]*theta[j];
+    J=0;
+    for(var i=0;i<m;i++)
+        J+=Math.pow(H[i]-Y[i],2)/(2*m);
+    var grad=new Array(n);
+    for(var i=0;i<n;i++)
+        grad[i]=theta[i];
+    // console.log(grad);
+    for(var i=0;i<m;i++)
+        for(var j=0;j<n;j++){
+            // console.log("Z: ",(alpha/m)*(H[i]-Y[i])*X[i][j]);
+            grad[j]-=(alpha/m)*(H[i]-Y[i])*X[i][j];
+        }
+    // // console.log(grad);
+    // for(var i=0;i<n;i++)
+    //     theta[i]=grad[i];
+
+    return [J,grad];
+
+
+}
+
+
 willBeDrawn=false;
 
 var plotArea = {
     canvas: document.getElementById("plotArea"),
     scale:100,
+    points:[],
 
     setup: function() {
         this.canvas=document.getElementById("plotArea");
@@ -18,7 +152,7 @@ var plotArea = {
         this.mouseDown = false;
         this.ox=width/2;
         this.oy=height/2;
-        scheduleDraw();
+
     },
     clear: function() {
         if (!this.context) return;
@@ -27,18 +161,23 @@ var plotArea = {
 }
 
 window.addEventListener("mousedown",function(e){
+    plotArea.selected=undefined;
     plotArea.mouseDown=true;
     plotArea.prevOx=plotArea.ox;
     plotArea.prevOy=plotArea.oy;
     var rect = plotArea.canvas.getBoundingClientRect();
     plotArea.mouseDownRawX = (e.clientX - rect.left)*DPR;
     plotArea.mouseDownRawY = (e.clientY - rect.top)*DPR;
+    plotArea.mouseDownX = ((e.clientX - rect.left)*DPR-plotArea.ox)/plotArea.scale;
+    plotArea.mouseDownY = ((e.clientY - rect.top)*DPR-plotArea.oy)/plotArea.scale;
+    scheduleDraw()
     // plotArea.mouseDownX = Math.round(((plotArea.mouseDownRawX - globalScope.ox) / globalScope.scale) / unit) * unit;
     // plotArea.mouseDownY = Math.round(((plotArea.mouseDownRawY - globalScope.oy) / globalScope.scale) / unit) * unit;
 }
 )
 window.addEventListener("mouseup",function(e){
     plotArea.mouseDown=false;
+    scheduleDraw();
 }
 )
 
@@ -46,12 +185,12 @@ window.addEventListener("mousemove",function(e){
     var rect = plotArea.canvas.getBoundingClientRect();
     plotArea.mouseRawX = (e.clientX - rect.left)*DPR;
     plotArea.mouseRawY = (e.clientY - rect.top)*DPR;
+    plotArea.mouseX = ((e.clientX - rect.left)*DPR-plotArea.ox)/plotArea.scale;
+    plotArea.mouseY = ((e.clientY - rect.top)*DPR-plotArea.oy)/plotArea.scale;
+    // console.log(plotArea.mouseX,plotArea.mouseY)
 
-    if(plotArea.mouseDown){
-        plotArea.ox=plotArea.prevOx+    plotArea.mouseRawX-plotArea.mouseDownRawX;
-        plotArea.oy=plotArea.prevOy+    plotArea.mouseRawY-plotArea.mouseDownRawY;
-        scheduleDraw();
-    }
+    if(plotArea.mouseDown)
+    scheduleDraw();
     // plotArea.mouseDownX = Math.round(((plotArea.mouseDownRawX - globalScope.ox) / globalScope.scale) / unit) * unit;
     // plotArea.mouseDownY = Math.round(((plotArea.mouseDownRawY - globalScope.oy) / globalScope.scale) / unit) * unit;
 }
@@ -68,6 +207,14 @@ String.prototype.replaceAll = function(search, replacement) {
 };
 function drawGrid(){
     willBeDrawn=false;
+
+        for(var i=0;i<plotArea.points.length;i++)
+            plotArea.points[i].update();
+        if(plotArea.mouseDown&&!plotArea.selected){
+            plotArea.ox=plotArea.prevOx+    plotArea.mouseRawX-plotArea.mouseDownRawX;
+            plotArea.oy=plotArea.prevOy+    plotArea.mouseRawY-plotArea.mouseDownRawY;
+
+        }
     plotArea.clear();
     var ctx=plotArea.context;
     ctx.strokeStyle="#eee";
@@ -94,7 +241,12 @@ function drawGrid(){
     ctx.moveTo(plotArea.ox,0);
     ctx.lineTo(plotArea.ox,height);
     ctx.stroke();
-    var exp="Math.pow(x,3)+Math.pow(x,2)+Math.pow(x,4)+Math.pow(x,5)+1";
+
+
+    var ctx=plotArea.context;
+
+
+    // console.log(exp)
 
     ctx.beginPath();
     ctx.lineWidth=4;
@@ -105,52 +257,109 @@ function drawGrid(){
     var px;
     var py;
     itertations=0;
-    for(var i=(-plotArea.ox)/(2*plotArea.scale);i<(width-plotArea.ox)/(2*plotArea.scale);i+=dx*100/plotArea.scale){
+
+    for(var i=(-plotArea.ox)/(plotArea.scale);i<(width-plotArea.ox)/(plotArea.scale);i+=dx*100/plotArea.scale){
         itertations++;
         var y=eval(exp.replaceAll("x",i));
-        ctx.lineTo(i*plotArea.scale+plotArea.ox,-y*plotArea.scale+plotArea.oy);
+        ctx.lineTo(i*plotArea.scale+plotArea.ox,y*plotArea.scale+plotArea.oy);
+    }
+    // console.log("Iterations:",itertations);
+    ctx.stroke();
 
 
-        if(py!==undefined)CD=(y-py)/(i-px);
-        if(PD!==undefined)DD=(Math.atan(PD)-Math.atan(CD))*plotArea.scale;
-        px=i;
-        py=y;
-        PD=CD;
-        dx=.05;
-        // console.log(i,DD)
 
-        if(DD!==undefined){
-            // if(Math.abs(DD)<0.0001){
-            //     i+=2;
-            // }
-            // if(Math.abs(DD)<0.001){
-            //     dx+=4;
-            //
-            // }
-            // else if(Math.abs(DD)<0.01){
-            //     dx+=2;
-            //
-            // }
-            if(Math.abs(DD)<0.1){
 
-                dx+=.5;
-            }
-            // else if(Math.abs(DD)<0.15){
-            //
-            //     dx+=0.2;
-            // }
-            // else if(Math.abs(DD)<0.3){
-            //
-            //     dx+=0.1;
-            // }
-            // else console.log("hit1");
-            // else if(Math.abs(DD)<0.4){
-            //     i+=0.05;
-            // }
-        }
+    for(var i=0;i<plotArea.points.length;i++)
+        plotArea.points[i].draw();
+}
 
+
+function Point(x, y) {
+    // Data member initializations
+    this.x = x;
+    this.y = y;
+    plotArea.points.push(this);
+    this.hover = false;
+
+
+    this.startDragging = function() {
+        this.oldx = this.x;
+        this.oldy = this.y;
 
     }
-    console.log("Iterations:",itertations);
-    ctx.stroke();
+    this.drag = function() {
+        console.log("HIT")
+        this.x = this.oldx + plotArea.mouseX - plotArea.mouseDownX;
+        this.y = this.oldy + plotArea.mouseY - plotArea.mouseDownY;
+
+    }
+    this.update = function() {
+
+        // console.log(plotArea.mouseX,plotArea.mouseY,this.isHover());
+        if(plotArea.selected==undefined&&plotArea.mouseDown&&this.isHover()){
+            this.selected=true;
+            plotArea.selected=this;
+        }
+        else if(!plotArea.mouseDown){
+            this.selected=false;
+
+        }
+        if(this.selected){
+            this.x=plotArea.mouseX;
+            this.y=plotArea.mouseY;
+        }
+        // return update;
+    }
+
+    // The isHover method is used to check if the mouse is hovering over the object.
+    // Return Value: true if mouse is hovering over object else false
+    // NOT OVERIDABLE
+    this.isHover = function() {
+
+        if (plotArea.mouseX - this.x <= 20/plotArea.scale && this.x - plotArea.mouseX <= 20/plotArea.scale && plotArea.mouseY - this.y <= 20/plotArea.scale && this.y - plotArea.mouseY <= 20/plotArea.scale) return true;
+
+        return false;
+    };
+
+
+    //Method that draws the outline of the module and calls draw function on module Nodes.
+    //NOT OVERIDABLE
+    this.draw = function() {
+
+        var ctx=plotArea.context;
+        ctx.beginPath();
+        ctx.arc(this.x*plotArea.scale+plotArea.ox,this.y*plotArea.scale+plotArea.oy,10,0,2*Math.PI);
+        ctx.fill();
+    }
+
+    //method to delete object
+    //OVERRIDE WITH CAUTION
+    this.delete = function() {
+        plotArea.points.clean(this);
+    }
 }
+
+
+
+
+//fn to remove elem in array
+Array.prototype.clean = function(deleteValue) {
+    for (var i = 0; i < this.length; i++) {
+        if (this[i] == deleteValue) {
+            this.splice(i, 1);
+            i--;
+        }
+    }
+    return this;
+};
+Array.prototype.extend = function(other_array) {
+    /* you should include a test to check whether other_array really is an array */
+    other_array.forEach(function(v) {
+        this.push(v)
+    }, this);
+}
+
+//fn to check if an elem is in an array
+Array.prototype.contains = function(value) {
+    return this.indexOf(value) > -1
+};
