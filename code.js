@@ -14,7 +14,7 @@ exp="1";
 theta=[1,1,1];
 startAlpha=1;
 r=1.01
-function solve(d=0,iterations=3000){
+function solve(d=0,iterations=10000){
     var n=d+1;
     var m=plotArea.points.length;
     var X=new Array(m);
@@ -177,6 +177,7 @@ window.addEventListener("mousedown",function(e){
 )
 window.addEventListener("mouseup",function(e){
     plotArea.mouseDown=false;
+    solve( (plotArea.points.length||1)-1);
     scheduleDraw();
 }
 )
@@ -189,8 +190,10 @@ window.addEventListener("mousemove",function(e){
     plotArea.mouseY = ((e.clientY - rect.top)*DPR-plotArea.oy)/plotArea.scale;
     // console.log(plotArea.mouseX,plotArea.mouseY)
 
-    if(plotArea.mouseDown)
-    scheduleDraw();
+    if(plotArea.mouseDown){
+        // solve( (plotArea.points.length||1)-1,1000);
+        scheduleDraw();
+    }
     // plotArea.mouseDownX = Math.round(((plotArea.mouseDownRawX - globalScope.ox) / globalScope.scale) / unit) * unit;
     // plotArea.mouseDownY = Math.round(((plotArea.mouseDownRawY - globalScope.oy) / globalScope.scale) / unit) * unit;
 }
