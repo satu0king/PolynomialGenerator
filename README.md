@@ -1,2 +1,2 @@
 # PolynomialGenerator
-Apply Linear Regression to obtain polynomials
+Linear Regression to obtain polynomials using gradient descent 
