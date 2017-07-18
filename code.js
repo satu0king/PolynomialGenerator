@@ -2,6 +2,8 @@ function setup(){
     plotArea.setup();
     document.getElementById("addPointer").addEventListener("click",function(){new Point(0,0);console.log("SDS")});
     document.getElementById("solveButton").addEventListener("click",function(){solve( (plotArea.points.length||1)-1)});
+    document.getElementById("zoomin").addEventListener("click",function(){plotArea.scale+=5});
+    document.getElementById("zoomout").addEventListener("click",function(){plotArea.scale-=5});
 
     var c=5;
     for(var i=0;i<c;i++)
