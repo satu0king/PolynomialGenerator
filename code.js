@@ -165,6 +165,7 @@ var plotArea = {
 window.addEventListener("mousedown",function(e){
     plotArea.selected=undefined;
     plotArea.mouseDown=true;
+    console.log(e.clientX,e.clientY,"this is mouse");
     plotArea.prevOx=plotArea.ox;
     plotArea.prevOy=plotArea.oy;
     var rect = plotArea.canvas.getBoundingClientRect();
@@ -229,6 +230,7 @@ function drawGrid(){
     // console.log(ctx);
     var ox=plotArea.ox%plotArea.scale;
     var oy=plotArea.oy%plotArea.scale;
+    console.log(ox,oy,"ox",height,width,plotArea.scale);
     for(var i=ox;i<width;i+=plotArea.scale){
         ctx.moveTo(i,0);
         ctx.lineTo(i,height);
@@ -247,6 +249,54 @@ function drawGrid(){
     ctx.lineTo(plotArea.ox,height);
     ctx.stroke();
 
+    ctx.textAlign='right';
+    ctx.textBaseline='middle';
+    var ynow=plotArea.oy-plotArea.scale;
+    var no=1;
+    while(ynow>0){
+      ctx.beginPath();
+      ctx.moveTo(plotArea.ox-8,ynow);
+      ctx.lineTo(plotArea.ox+8,ynow);
+      ctx.stroke();
+      ctx.fillText(no.toString(),plotArea.ox-8-3,ynow);
+      no+=1;
+      ynow-=plotArea.scale;
+    }
+    ynow=plotArea.oy+plotArea.scale;
+    no=-1;
+    while(ynow<ctx.canvas.height){
+      ctx.beginPath();
+      ctx.moveTo(plotArea.ox-8,ynow);
+      ctx.lineTo(plotArea.ox+8,ynow);
+      ctx.stroke();
+      ctx.fillText(no.toString(),plotArea.ox-8-3,ynow);
+      no-=1;
+      ynow+=plotArea.scale;
+    }
+
+    var xnow=plotArea.ox-plotArea.scale;
+    var no=-1;
+    while(xnow>0){
+      ctx.beginPath();
+      ctx.moveTo(xnow,plotArea.oy-8);
+      ctx.lineTo(xnow,plotArea.oy+8);
+      ctx.stroke();
+      ctx.fillText(no.toString(),xnow,plotArea.oy+8+5);
+      no-=1;
+      xnow-=plotArea.scale;
+    }
+    xnow=plotArea.ox+plotArea.scale;
+    no=1;
+    while(xnow<width){
+      console.log("hello");
+      ctx.beginPath();
+      ctx.moveTo(xnow,plotArea.oy-8);
+      ctx.lineTo(xnow,plotArea.oy+8);
+      ctx.stroke();
+      ctx.fillText(no.toString(),xnow,plotArea.oy+8+5);
+      no+=1;
+      xnow+=plotArea.scale;
+    }
 
     var ctx=plotArea.context;
 
